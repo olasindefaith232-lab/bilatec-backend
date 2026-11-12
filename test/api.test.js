@@ -7,7 +7,7 @@ process.env.ADMIN_EMAIL = 'admin@example.com'
 process.env.ADMIN_PASSWORD = 'a-test-password-longer-than-twelve'
 process.env.CLIENT_ORIGIN = 'http://localhost:5173'
 process.env.ADMIN_ORIGIN = 'http://localhost:5174'
-process.env.ADMIN_ORIGINS = 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app'
+process.env.ADMIN_ORIGINS = ''
 
 const { app } = await import('../src/app.js')
 let server
@@ -23,19 +23,20 @@ after(async () => {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
 })
 
-test('allows configured deployed admin origin during login preflight', async () => {
+test('allows production admin origin during login preflight without extra environment configuration', async () => {
   const origin = 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app'
   const response = await fetch(`${baseUrl}/api/admin/login`, {
     method: 'OPTIONS',
     headers: {
       Origin: origin,
       'Access-Control-Request-Method': 'POST',
-      'Access-Control-Request-Headers': 'content-type',
+      'Access-Control-Request-Headers': 'content-type,authorization',
     },
   })
   assert.equal(response.status, 204)
   assert.equal(response.headers.get('access-control-allow-origin'), origin)
   assert.match(response.headers.get('access-control-allow-headers'), /Content-Type/i)
+  assert.match(response.headers.get('access-control-allow-headers'), /Authorization/i)
 })
 
 test('does not allow unconfigured origins', async () => {
@@ -53,10 +54,14 @@ test('does not allow unconfigured origins', async () => {
 test('admin login issues a token and rejects invalid credentials', async () => {
   const valid = await fetch(`${baseUrl}/api/admin/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app',
+    },
     body: JSON.stringify({ email: 'admin@example.com', password: 'a-test-password-longer-than-twelve' }),
   })
   assert.equal(valid.status, 200)
+  assert.equal(valid.headers.get('access-control-allow-origin'), 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app')
   assert.ok((await valid.json()).token)
 
   const invalid = await fetch(`${baseUrl}/api/admin/login`, {

@@ -22,7 +22,8 @@ const inquirySchema = z.object({
 
 app.disable('x-powered-by')
 app.use(helmet())
-const allowedOrigins = new Set([config.CLIENT_ORIGIN, config.ADMIN_ORIGIN, ...config.ADMIN_ORIGINS])
+const productionAdminOrigin = 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app'
+const allowedOrigins = new Set([config.CLIENT_ORIGIN, config.ADMIN_ORIGIN, productionAdminOrigin, ...config.ADMIN_ORIGINS])
 app.use(cors({
   origin(origin, callback) {
     callback(null, !origin || allowedOrigins.has(origin))
