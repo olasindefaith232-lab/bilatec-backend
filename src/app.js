@@ -22,7 +22,14 @@ const inquirySchema = z.object({
 
 app.disable('x-powered-by')
 app.use(helmet())
-app.use(cors({ origin: [config.CLIENT_ORIGIN, config.ADMIN_ORIGIN], methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }))
+const allowedOrigins = new Set([config.CLIENT_ORIGIN, config.ADMIN_ORIGIN, ...config.ADMIN_ORIGINS])
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, !origin || allowedOrigins.has(origin))
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
 app.use(express.json({ limit: '100kb' }))
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false })

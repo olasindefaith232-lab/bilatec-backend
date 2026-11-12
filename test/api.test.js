@@ -7,6 +7,7 @@ process.env.ADMIN_EMAIL = 'admin@example.com'
 process.env.ADMIN_PASSWORD = 'a-test-password-longer-than-twelve'
 process.env.CLIENT_ORIGIN = 'http://localhost:5173'
 process.env.ADMIN_ORIGIN = 'http://localhost:5174'
+process.env.ADMIN_ORIGINS = 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app'
 
 const { app } = await import('../src/app.js')
 let server
@@ -20,6 +21,33 @@ before(async () => {
 
 after(async () => {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+})
+
+test('allows configured deployed admin origin during login preflight', async () => {
+  const origin = 'https://bilatec-admin-idrp28d3w-olasindefaith232-lab.vercel.app'
+  const response = await fetch(`${baseUrl}/api/admin/login`, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: origin,
+      'Access-Control-Request-Method': 'POST',
+      'Access-Control-Request-Headers': 'content-type',
+    },
+  })
+  assert.equal(response.status, 204)
+  assert.equal(response.headers.get('access-control-allow-origin'), origin)
+  assert.match(response.headers.get('access-control-allow-headers'), /Content-Type/i)
+})
+
+test('does not allow unconfigured origins', async () => {
+  const response = await fetch(`${baseUrl}/api/admin/login`, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: 'https://untrusted.example',
+      'Access-Control-Request-Method': 'POST',
+      'Access-Control-Request-Headers': 'content-type',
+    },
+  })
+  assert.equal(response.headers.get('access-control-allow-origin'), null)
 })
 
 test('admin login issues a token and rejects invalid credentials', async () => {

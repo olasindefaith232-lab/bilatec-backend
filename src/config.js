@@ -1,6 +1,10 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
+const originListSchema = z.string().optional()
+  .transform((value) => value ? value.split(',').map((origin) => origin.trim()).filter(Boolean) : [])
+  .pipe(z.array(z.string().url()))
+
 const configSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().url(),
@@ -9,6 +13,7 @@ const configSchema = z.object({
   ADMIN_PASSWORD: z.string().min(12),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
   ADMIN_ORIGIN: z.string().url().default('http://localhost:5174'),
+  ADMIN_ORIGINS: originListSchema.default([]),
 })
 
 const parsedConfig = configSchema.safeParse(process.env)
